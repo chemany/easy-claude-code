@@ -1,0 +1,76 @@
+{
+  "project_directories": [
+    {
+      "name": "My Project",
+      "path": "/path/to/your/project",
+      "description": "Your main coding project"
+    },
+    {
+      "name": "Another Project", 
+      "path": "/path/to/another/project",
+      "description": "Another project directory"
+    }
+  ],
+  "providers": [
+    {
+      "name": "yovy-openrouter",
+      "type": "openrouter",
+      "base_url": "https://cc.yovy.app",
+      "api_key": "sk-or-v1-your-openrouter-key-here",
+      "model": "anthropic/claude-3.5-sonnet",
+      "small_fast_model": "anthropic/claude-3.5-haiku",
+      "priority": 1,
+      "max_retries": 3,
+      "timeout": 30.0,
+      "description": "OpenRouter API via Cloudflare Workers proxy"
+    },
+    {
+      "name": "nekro-claude",
+      "type": "custom_anthropic",
+      "base_url": "https://claude.nekro.ai",
+      "api_key": "ak-your-nekro-api-key-here",
+      "model": "auto",
+      "small_fast_model": "auto", 
+      "priority": 2,
+      "max_retries": 3,
+      "timeout": 30.0,
+      "description": "Multi-provider proxy supporting Tongyi Qianwen, Zhipu AI, Gemini, etc."
+    },
+    {
+      "name": "moonshot-direct",
+      "type": "moonshot",
+      "base_url": "https://api.moonshot.cn/anthropic/",
+      "api_key": "sk-your-moonshot-key-here",
+      "model": "auto",
+      "small_fast_model": "auto",
+      "priority": 3,
+      "max_retries": 3,
+      "timeout": 30.0,
+      "description": "Direct Moonshot AI API (Claude-compatible)"
+    },
+    {
+      "name": "custom-claude-compatible",
+      "type": "custom_anthropic",
+      "base_url": "https://your-custom-claude-api.com/",
+      "api_key": "your-api-key-here",
+      "model": "auto",
+      "small_fast_model": "auto",
+      "priority": 4,
+      "max_retries": 3,
+      "timeout": 30.0,
+      "description": "Any Claude-compatible API endpoint"
+    },
+    {
+      "name": "official-anthropic",
+      "type": "official_anthropic",
+      "base_url": "https://api.anthropic.com/v1",
+      "api_key": "sk-ant-your-official-key-here", 
+      "model": "claude-3-5-sonnet-20241022",
+      "small_fast_model": "claude-3-5-haiku-20241022",
+      "priority": 5,
+      "max_retries": 3,
+      "timeout": 30.0,
+      "description": "Official Anthropic Claude API (direct)"
+    }
+  ]
+}
