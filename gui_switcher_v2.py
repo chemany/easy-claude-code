@@ -9,8 +9,244 @@ from tkinter import ttk, messagebox, filedialog
 import asyncio
 import os
 import threading
-from provider_switch import AIProviderSwitcher
+import json
+from provider_switch import AIProviderSwitcher, ProviderType
 from terminal_launcher import launch_terminal
+
+class ProviderEditDialog:
+    """提供商编辑对话框"""
+    
+    def __init__(self, parent, title, provider=None):
+        self.parent = parent
+        self.provider = provider  # 如果是编辑模式，传入现有provider
+        self.result = False
+        self.data = {}
+        
+        # 创建对话框窗口
+        self.dialog = tk.Toplevel(parent)
+        self.dialog.title(title)
+        self.dialog.geometry("600x700")
+        self.dialog.resizable(False, False)
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # 居中显示
+        self.center_window()
+        
+        # 创建界面
+        self.create_widgets()
+        
+        # 如果是编辑模式，填入现有数据
+        if self.provider:
+            self.load_provider_data()
+    
+    def center_window(self):
+        """居中显示对话框"""
+        self.dialog.update_idletasks()
+        x = (self.dialog.winfo_screenwidth() // 2) - (600 // 2)
+        y = (self.dialog.winfo_screenheight() // 2) - (700 // 2)
+        self.dialog.geometry(f"600x700+{x}+{y}")
+    
+    def create_widgets(self):
+        """创建对话框组件"""
+        main_frame = ttk.Frame(self.dialog, padding="20")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # 滚动容器
+        canvas = tk.Canvas(main_frame)
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # 基本信息
+        basic_frame = ttk.LabelFrame(scrollable_frame, text="基本信息", padding="10")
+        basic_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # 提供商名称
+        ttk.Label(basic_frame, text="名称*:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.name_var = tk.StringVar()
+        name_entry = ttk.Entry(basic_frame, textvariable=self.name_var, width=40)
+        name_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 如果是编辑模式，禁用名称修改
+        if self.provider:
+            name_entry.config(state='disabled')
+        
+        # 提供商类型
+        ttk.Label(basic_frame, text="类型*:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.type_var = tk.StringVar()
+        type_combo = ttk.Combobox(basic_frame, textvariable=self.type_var, width=37, state="readonly")
+        type_combo['values'] = [ptype.value for ptype in ProviderType]
+        type_combo.grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # API配置
+        api_frame = ttk.LabelFrame(scrollable_frame, text="API配置", padding="10")
+        api_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # Base URL
+        ttk.Label(api_frame, text="Base URL*:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.base_url_var = tk.StringVar()
+        ttk.Entry(api_frame, textvariable=self.base_url_var, width=40).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # API Key
+        ttk.Label(api_frame, text="API Key*:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.api_key_var = tk.StringVar()
+        ttk.Entry(api_frame, textvariable=self.api_key_var, width=40, show="*").grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 模型配置
+        model_frame = ttk.LabelFrame(scrollable_frame, text="模型配置", padding="10")
+        model_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # 主模型
+        ttk.Label(model_frame, text="主模型*:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.model_var = tk.StringVar()
+        ttk.Entry(model_frame, textvariable=self.model_var, width=40).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 快速模型
+        ttk.Label(model_frame, text="快速模型*:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.small_fast_model_var = tk.StringVar()
+        ttk.Entry(model_frame, textvariable=self.small_fast_model_var, width=40).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 高级配置
+        advanced_frame = ttk.LabelFrame(scrollable_frame, text="高级配置", padding="10")
+        advanced_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # 优先级
+        ttk.Label(advanced_frame, text="优先级:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.priority_var = tk.IntVar(value=1)
+        ttk.Spinbox(advanced_frame, from_=1, to=10, textvariable=self.priority_var, width=38).grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 最大重试次数
+        ttk.Label(advanced_frame, text="最大重试:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.max_retries_var = tk.IntVar(value=3)
+        ttk.Spinbox(advanced_frame, from_=1, to=10, textvariable=self.max_retries_var, width=38).grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 超时时间
+        ttk.Label(advanced_frame, text="超时时间(秒):").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.timeout_var = tk.DoubleVar(value=30.0)
+        ttk.Spinbox(advanced_frame, from_=5.0, to=120.0, increment=5.0, textvariable=self.timeout_var, width=38).grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(10, 0), pady=5)
+        
+        # 自定义头部
+        headers_frame = ttk.LabelFrame(scrollable_frame, text="自定义HTTP头部 (JSON格式)", padding="10")
+        headers_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        self.custom_headers_text = tk.Text(headers_frame, height=4, width=60, font=('Consolas', 9))
+        self.custom_headers_text.pack(fill=tk.BOTH, expand=True)
+        
+        # 按钮
+        button_frame = ttk.Frame(scrollable_frame)
+        button_frame.pack(fill=tk.X, pady=(20, 0))
+        
+        ttk.Button(button_frame, text="确定", command=self.on_ok).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(button_frame, text="取消", command=self.on_cancel).pack(side=tk.RIGHT)
+        
+        # 配置网格权重
+        basic_frame.columnconfigure(1, weight=1)
+        api_frame.columnconfigure(1, weight=1)
+        model_frame.columnconfigure(1, weight=1)
+        advanced_frame.columnconfigure(1, weight=1)
+        
+        # 打包滚动组件
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+    
+    def load_provider_data(self):
+        """加载提供商数据到表单"""
+        if not self.provider:
+            return
+        
+        self.name_var.set(self.provider.name)
+        self.type_var.set(self.provider.type.value)
+        self.base_url_var.set(self.provider.base_url)
+        self.api_key_var.set(self.provider.api_key)
+        self.model_var.set(self.provider.model)
+        self.small_fast_model_var.set(self.provider.small_fast_model)
+        self.priority_var.set(self.provider.priority)
+        self.max_retries_var.set(self.provider.max_retries)
+        self.timeout_var.set(self.provider.timeout)
+        
+        if self.provider.custom_headers:
+            self.custom_headers_text.insert(tk.END, json.dumps(self.provider.custom_headers, indent=2, ensure_ascii=False))
+    
+    def validate_data(self):
+        """验证表单数据"""
+        errors = []
+        
+        if not self.name_var.get().strip():
+            errors.append("名称不能为空")
+        
+        if not self.type_var.get():
+            errors.append("请选择提供商类型")
+        
+        if not self.base_url_var.get().strip():
+            errors.append("Base URL不能为空")
+        
+        if not self.api_key_var.get().strip():
+            errors.append("API Key不能为空")
+        
+        if not self.model_var.get().strip():
+            errors.append("主模型不能为空")
+        
+        if not self.small_fast_model_var.get().strip():
+            errors.append("快速模型不能为空")
+        
+        # 验证自定义头部JSON
+        headers_text = self.custom_headers_text.get(1.0, tk.END).strip()
+        custom_headers = None
+        if headers_text:
+            try:
+                custom_headers = json.loads(headers_text)
+                if not isinstance(custom_headers, dict):
+                    errors.append("自定义头部必须是JSON对象格式")
+            except json.JSONDecodeError as e:
+                errors.append(f"自定义头部JSON格式错误: {e}")
+        
+        if errors:
+            messagebox.showerror("验证错误", "\n".join(errors))
+            return False
+        
+        # 保存数据
+        self.data = {
+            'name': self.name_var.get().strip(),
+            'provider_type': self.type_var.get(),
+            'base_url': self.base_url_var.get().strip(),
+            'api_key': self.api_key_var.get().strip(),
+            'model': self.model_var.get().strip(),
+            'small_fast_model': self.small_fast_model_var.get().strip(),
+            'custom_headers': custom_headers,
+            'priority': self.priority_var.get(),
+            'max_retries': self.max_retries_var.get(),
+            'timeout': self.timeout_var.get()
+        }
+        
+        return True
+    
+    def on_ok(self):
+        """确定按钮回调"""
+        if self.validate_data():
+            self.result = True
+            self.dialog.destroy()
+    
+    def on_cancel(self):
+        """取消按钮回调"""
+        self.result = False
+        self.dialog.destroy()
+    
+    def show(self):
+        """显示对话框并返回结果"""
+        self.dialog.wait_window()
+        return self.result
+    
+    def get_data(self):
+        """获取表单数据"""
+        return self.data
 
 class AIProviderGUI_V2:
     def __init__(self, config_file="providers.json"):
@@ -472,16 +708,63 @@ echo'''
             messagebox.showerror("错误", f"激活提供商失败: {provider_name}")
     
     def add_provider(self):
-        """添加新提供商 - 简化版实现"""
-        messagebox.showinfo("提示", "添加提供商功能请直接编辑 providers.json 文件")
+        """添加新提供商"""
+        dialog = ProviderEditDialog(self.root, "添加提供商")
+        if dialog.show():
+            data = dialog.get_data()
+            success = self.switcher.add_provider(**data)
+            if success:
+                messagebox.showinfo("成功", f"已添加提供商: {data['name']}")
+                self.update_provider_list()
+            else:
+                messagebox.showerror("错误", "添加提供商失败 - 提供商名称可能已存在")
     
     def edit_provider(self):
-        """编辑提供商 - 简化版实现"""
-        messagebox.showinfo("提示", "编辑提供商功能请直接编辑 providers.json 文件")
+        """编辑提供商"""
+        selection = self.provider_tree.selection()
+        if not selection:
+            messagebox.showwarning("警告", "请先选择一个提供商")
+            return
+        
+        item = self.provider_tree.item(selection[0])
+        provider_name = item['values'][0]
+        
+        # 获取当前提供商数据
+        provider = next((p for p in self.switcher.providers if p.name == provider_name), None)
+        if not provider:
+            messagebox.showerror("错误", "找不到选中的提供商")
+            return
+        
+        dialog = ProviderEditDialog(self.root, "编辑提供商", provider)
+        if dialog.show():
+            data = dialog.get_data()
+            # 从数据中移除name，因为不能修改名称
+            updates = {k: v for k, v in data.items() if k != 'name'}
+            success = self.switcher.update_provider(provider_name, **updates)
+            if success:
+                messagebox.showinfo("成功", f"已更新提供商: {provider_name}")
+                self.update_provider_list()
+            else:
+                messagebox.showerror("错误", "更新提供商失败")
     
     def delete_provider(self):
-        """删除提供商 - 简化版实现"""
-        messagebox.showinfo("提示", "删除提供商功能请直接编辑 providers.json 文件")
+        """删除提供商"""
+        selection = self.provider_tree.selection()
+        if not selection:
+            messagebox.showwarning("警告", "请先选择一个提供商")
+            return
+        
+        item = self.provider_tree.item(selection[0])
+        provider_name = item['values'][0]
+        
+        # 确认删除
+        if messagebox.askyesno("确认删除", f"确定要删除提供商 '{provider_name}' 吗？\n\n这将永久删除该配置。"):
+            success = self.switcher.delete_provider(provider_name)
+            if success:
+                messagebox.showinfo("成功", f"已删除提供商: {provider_name}")
+                self.update_provider_list()
+            else:
+                messagebox.showerror("错误", "删除提供商失败")
     
     def run(self):
         """运行GUI"""

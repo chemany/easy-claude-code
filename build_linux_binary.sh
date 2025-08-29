@@ -38,7 +38,7 @@ fi
 
 # 确保依赖已安装
 echo -e "${BLUE}🔍 验证依赖...${NC}"
-python -c "import pyinstaller, aiohttp, tkinter; print('✅ 所有依赖已就绪')" || {
+python3 -c "import pyinstaller, aiohttp, tkinter; print('✅ 所有依赖已就绪')" || {
     echo -e "${YELLOW}⚠️  缺少依赖，正在安装...${NC}"
     pip install pyinstaller aiohttp
 }
@@ -114,6 +114,6 @@ fi
 echo
 echo -e "${BLUE}📊 构建统计:${NC}"
 echo "构建时间: $(date)"
-echo "Python版本: $(python --version)"
+echo "Python版本: $(python3 --version)"
 echo "PyInstaller版本: $(pyinstaller --version)"
 echo "文件大小: $size"

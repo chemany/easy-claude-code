@@ -211,6 +211,87 @@ class AIProviderSwitcher:
         self.save_config()
         return True
     
+    def add_provider(self, name: str, provider_type: str, base_url: str, api_key: str, 
+                    model: str, small_fast_model: str, custom_headers: Optional[Dict[str, str]] = None,
+                    priority: int = 1, max_retries: int = 3, timeout: float = 30.0) -> bool:
+        """添加新的AI提供商"""
+        # 检查是否已存在
+        for provider in self.providers:
+            if provider.name == name:
+                return False  # 已存在
+        
+        try:
+            # 创建提供商配置
+            new_provider = ProviderConfig(
+                name=name,
+                type=ProviderType(provider_type),
+                base_url=base_url,
+                api_key=api_key,
+                model=model,
+                small_fast_model=small_fast_model,
+                custom_headers=custom_headers,
+                priority=priority,
+                max_retries=max_retries,
+                timeout=timeout
+            )
+            
+            self.providers.append(new_provider)
+            self.save_config()
+            return True
+        except ValueError:
+            return False  # 无效的提供商类型
+    
+    def update_provider(self, name: str, **updates) -> bool:
+        """更新提供商配置"""
+        provider = next((p for p in self.providers if p.name == name), None)
+        if not provider:
+            return False
+        
+        try:
+            # 更新字段
+            if 'provider_type' in updates:
+                provider.type = ProviderType(updates['provider_type'])
+            if 'base_url' in updates:
+                provider.base_url = updates['base_url']
+            if 'api_key' in updates:
+                provider.api_key = updates['api_key']
+            if 'model' in updates:
+                provider.model = updates['model']
+            if 'small_fast_model' in updates:
+                provider.small_fast_model = updates['small_fast_model']
+            if 'custom_headers' in updates:
+                provider.custom_headers = updates['custom_headers']
+            if 'priority' in updates:
+                provider.priority = updates['priority']
+            if 'max_retries' in updates:
+                provider.max_retries = updates['max_retries']
+            if 'timeout' in updates:
+                provider.timeout = updates['timeout']
+            
+            self.save_config()
+            return True
+        except ValueError:
+            return False
+    
+    def delete_provider(self, name: str) -> bool:
+        """删除提供商"""
+        provider = next((p for p in self.providers if p.name == name), None)
+        if not provider:
+            return False
+        
+        self.providers.remove(provider)
+        
+        # 如果删除的是当前激活的提供商，则清空当前提供商
+        if self.current_provider == name:
+            self.current_provider = None
+            # 清理环境变量
+            env_keys_to_remove = [key for key in os.environ.keys() if key.startswith("ANTHROPIC_")]
+            for key in env_keys_to_remove:
+                os.environ.pop(key, None)
+        
+        self.save_config()
+        return True
+    
     async def check_provider_health(self, provider: ProviderConfig) -> HealthStatus:
         """检查单个提供者的健康状态"""
         start_time = time.time()
