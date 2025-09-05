@@ -119,20 +119,26 @@ python run.py
 
 ### First Time Setup
 
-1. **Launch the application**:
+1. **Configure providers**:
+   ```bash
+   # Copy the example configuration file
+   cp providers.example.json providers.json
+   
+   # Edit providers.json with your API keys
+   nano providers.json
+   ```
+
+2. **Launch the application**:
    ```bash
    python run.py
    ```
-
-2. **Configure your providers**:
-   - Copy `providers.example.json` to `providers.json`
-   - Edit with your actual API keys
-   - Or use the GUI's "Add Provider" button
 
 3. **Start using**:
    - Select an AI provider from the left panel
    - Choose your project directory
    - Click "🚀 One-Click Launch" to start coding!
+
+**Note**: You can also add/edit providers using the GUI's "Add Provider" or "Edit Provider" buttons.
 
 ## 📋 Configuration
 
@@ -147,7 +153,7 @@ Edit `providers.json` with your API keys:
       "name": "yovy-openrouter",
       "type": "openrouter", 
       "base_url": "https://cc.yovy.app",
-      "api_key": "sk-or-v1-your-actual-key",
+      "api_key": "YOUR_OPENROUTER_API_KEY",
       "model": "anthropic/claude-3.5-sonnet",
       "small_fast_model": "anthropic/claude-3.5-haiku",
       "priority": 1
@@ -156,7 +162,7 @@ Edit `providers.json` with your API keys:
       "name": "nekro-multi",
       "type": "custom_anthropic",
       "base_url": "https://claude.nekro.ai", 
-      "api_key": "ak-your-actual-key",
+      "api_key": "YOUR_CLAUDE_NEXUS_API_KEY",
       "model": "auto",
       "small_fast_model": "auto",
       "priority": 2
@@ -167,13 +173,20 @@ Edit `providers.json` with your API keys:
 
 ### Environment Variables
 
-Easy Claude Code automatically manages these environment variables:
+Easy Claude Code automatically manages these environment variables when you activate a provider:
 
 - `ANTHROPIC_API_KEY` - For OpenRouter and direct APIs
 - `ANTHROPIC_AUTH_TOKEN` - For claude.nekro.ai and custom endpoints  
 - `ANTHROPIC_BASE_URL` - Provider's base URL
 - `ANTHROPIC_MODEL` - Model name (when required)
 - `ANTHROPIC_SMALL_FAST_MODEL` - Fast model for simple tasks
+
+### Security Best Practices
+
+1. **Never commit API keys to version control** - `providers.json` is in `.gitignore`
+2. **Keep your `providers.json` file private**
+3. **Rotate your API keys regularly**
+4. **Use different keys for different environments**
 
 ## 💡 Usage
 

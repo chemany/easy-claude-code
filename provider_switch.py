@@ -125,17 +125,16 @@ class AIProviderSwitcher:
                     "name": "openrouter",
                     "type": "openrouter",
                     "base_url": "https://cc.yovy.app",
-                    "api_key": "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",
+                    "api_key": "YOUR_OPENROUTER_API_KEY",
                     "model": "moonshotai/kimi-k2:free",
                     "small_fast_model": "moonshotai/kimi-k2:free",
-                    "custom_headers": {"x-api-key": "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"},
                     "priority": 1
                 },
                 {
                     "name": "custom_anthropic",
                     "type": "custom_anthropic", 
                     "base_url": "https://api.jiuwanliguoxue.com/",
-                    "api_key": "sk-acw-d97ae014-3f6dd2cd2af22cdf",
+                    "api_key": "YOUR_ANTHROPIC_API_KEY",
                     "model": "moonshotai/kimi-k2:free",
                     "small_fast_model": "moonshotai/kimi-k2:free",
                     "priority": 2
@@ -165,6 +164,7 @@ class AIProviderSwitcher:
             json.dump(default_config, f, indent=2, ensure_ascii=False)
         
         print(f"默认配置文件已创建: {self.config_file}")
+        print("请编辑 providers.json 文件并填入您的 API keys")
         self.load_config()
     
     def save_config(self):

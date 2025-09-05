@@ -41,6 +41,7 @@ providers.json.backup
 config_backups/
 *.log
 
+
 # Build and packaging
 build_env/
 releases/

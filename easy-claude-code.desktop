@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Easy Claude Code
+Comment=AI Provider Switcher for Claude Code
+Exec=/home/jason/code/easy-claude-code/launch.sh
+Icon=applications-development
+Terminal=false
+Categories=Development;Utility;
+Keywords=AI;Claude;Provider;Switcher;Development;
+StartupNotify=true
